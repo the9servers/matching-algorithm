@@ -270,15 +270,10 @@ const users = [
   }
 ];
 
-
 const matchUsers = () => {
   const user = users[0];
-  
-  try {
-    // const userDoc = await db.collection('users').doc(userId).get();
-    // const user = userDoc.data();
 
-    // const potentialMatchesSnapshot = await db.collection('users').get();
+  try {
     const potentialMatchesSnapshot = users;
     let matches = [];
 
@@ -287,22 +282,23 @@ const matchUsers = () => {
         const score = calculateMatchScore(user, match);
         matches.push({ matchId: match.userid, score });
       } 
-      else if (match.userid !== user.userid && user.currentNeed === 'Offering Support' && match.currentNeed === 'Seeking Support' ) {
+      else if (match.userid !== user.userid && user.currentNeed === 'Offering Support' && match.currentNeed === 'Seeking Support') {
         const score = calculateMatchScore(user, match);
         matches.push({ matchId: match.userid, score });
       }
     });
 
-    matches.sort((a, b) => b.score - a.score); // Sort matches by score in descending order
-    console.log("Top matches: ", matches);
-    return matches.slice(0, 5); // Return top 5 matches
+    // Sort matches by score in descending order and get the top 5
+    matches.sort((a, b) => b.score - a.score);
+    const topMatches = matches.slice(0, 5);
+    console.log("Top matches: ", topMatches);
   } 
   catch (error) {
     console.error('Error matching users:', error);
   }
 };
 
-// Example calculateMatchScore function
+// calculateMatchScore function
 const calculateMatchScore = (user, match) => {
   let score = 0;
 
@@ -311,45 +307,44 @@ const calculateMatchScore = (user, match) => {
   score += (ageDifference <= 5) ? 10 : (ageDifference <= 10) ? 5 : 0;
 
   // Location Match (20 points)
-  const locationScore = user.location === match.location ? 20 : 0;
-  score += locationScore;
+  score += (user.location === match.location) ? 20 : 0;
 
   // EIS Score Match (15 points)
-  const eisDifference = Math.abs(user.EISscore - match.EISscore);
+  const eisDifference = Math.abs(user.eisScore - match.eisScore);
   score += (eisDifference <= 10) ? 15 : (eisDifference <= 20) ? 10 : 0;
 
   // OCEAN Personality Match (20 points)
-  const oceanScore = calculateOceanScore(user.OCEAN, match.OCEAN);
-  score += oceanScore;
+  score += calculateOceanScore(user, match);
 
   // Relationship Status Match (5 points)
-  const relationshipScore = user.relationshipStatus === match.relationshipStatus ? 5 : 0;
-  score += relationshipScore;
+  score += (user.relationshipStatus === match.relationshipStatus) ? 5 : 0;
 
   // Shared Interests (10 points)
   const sharedInterests = user.interests.filter(interest => match.interests.includes(interest));
   score += sharedInterests.length * 2;
 
   // Support Type Match (10 points)
-  const supportTypeScore = calculateSupportTypeScore(user.supportType, match.supportType);
-  score += supportTypeScore;
+  score += calculateSupportTypeScore(user.supportType.preferred, match.supportType.offered);
 
   // Support Availability Match (10 points)
-  const availabilityScore = user.supportAvailability === 'Always Available' || match.supportAvailability === 'Always Available' ? 10 : 5;
-  score += availabilityScore;
+  if (user.supportAvailability.alwaysAvailable || match.supportAvailability.alwaysAvailable) {
+    score += 10;
+  } else if (user.supportAvailability.selectedTime === match.supportAvailability.selectedTime) {
+    score += 5;
+  }
 
   return score;
 };
 
-const calculateOceanScore = (userOcean, matchOcean) => {
+const calculateOceanScore = (user, match) => {
   let score = 0;
 
   // Comparing individual OCEAN traits
-  score += (Math.abs(user.ocean.Openness - match.ocean.Openness) <= 10) ? 5 : 0;
-  score += (Math.abs(user.ocean.Conscientiousness - match.ocean.Conscientiousness) <= 10) ? 5 : 0;
-  score += (Math.abs(user.ocean.Extraversion - match.ocean.Extraversion) <= 10) ? 5 : 0;
-  score += (Math.abs(user.ocean.Agreeableness - match.ocean.Agreeableness) <= 10) ? 5 : 0;
-  score += (Math.abs(user.ocean.Neuroticism - match.ocean.Neuroticism) <= 10) ? 5 : 0;
+  score += (Math.abs(user.ocean.openness - match.ocean.openness) <= 10) ? 5 : 0;
+  score += (Math.abs(user.ocean.conscientiousness - match.ocean.conscientiousness) <= 10) ? 5 : 0;
+  score += (Math.abs(user.ocean.extraversion - match.ocean.extraversion) <= 10) ? 5 : 0;
+  score += (Math.abs(user.ocean.agreeableness - match.ocean.agreeableness) <= 10) ? 5 : 0;
+  score += (Math.abs(user.ocean.neuroticism - match.ocean.neuroticism) <= 10) ? 5 : 0;
 
   return score;
 };
@@ -359,6 +354,13 @@ const calculateSupportTypeScore = (userSupportType, matchSupportType) => {
   const matchingSupportTypes = userSupportType.filter(type => matchSupportType.includes(type));
   return matchingSupportTypes.length * 2;
 };
+
+module.exports.finalMatch = (req, res) => {
+  matchUsers();
+
+  res.send("Match successful");
+}
+
 
 module.exports.finalMatch = (req, res) => {
   matchUsers();
