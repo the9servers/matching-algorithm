@@ -361,9 +361,47 @@ module.exports.finalMatch = (req, res) => {
   res.send("Match successful");
 }
 
+//Registration endpoint
+module.exports.register = async (req, res) => {
+  try {
+    const userData = req.body;
+    const db = admin.firestore();
+    const usersRef = db.collection('users');
+    
+    await usersRef.doc(userData.userid).set(userData);
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to register user' });
+  }
+}
 
-module.exports.finalMatch = (req, res) => {
-  matchUsers();
+//login endpoint
+module.exports.login = async (req, res) => {
+  
+}
 
-  res.send("Match successful");
+//profile update
+module.exports.updateProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const matches = await findMatches(userId, limit);
+    res.json(matches);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to find matches' });
+  }
+}
+
+//get matches
+module.exports.getMatches = async () => {
+  try {
+    const { userId } = req.params;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const matches = await findMatches(userId, limit);
+    res.json(matches);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to find matches' });
+  }
 }

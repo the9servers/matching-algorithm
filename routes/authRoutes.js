@@ -10,6 +10,9 @@ var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 const router = Router();
 
-router.get("/match", authController.finalMatch);
+router.get("/register", authController.register);
+router.get("/login", authController.login);
+router.get("/users/:userId", authController.updateProfile);
+router.get("/getMatches", authController.getMatches);
 
 module.exports = router;
